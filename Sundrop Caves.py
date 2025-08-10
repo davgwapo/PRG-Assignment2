@@ -417,3 +417,105 @@ def sell_menu(player):
         else:
             print("Invalid choice.")
 
+
+# ---------- Mine loop ----------
+def enter_mine(map_maps, fogs, player):
+    lvl = player["level"]
+    # when entering from town, if at town coords (0,0) appear at stored portal pos for that level
+    if player["x"] == 0 and player["y"] == 0:
+        px, py = player["portal_positions"].get(lvl, (0, 0))
+        player["x"], player["y"] = px, py
+    current_map = map_maps[lvl]
+    current_fog = fogs[lvl]
+
+    # reveal around player
+    clear_fog_around(current_fog, current_map, player["x"], player["y"], radius=2 if player["torch"] else 1)
+
+    while True:
+        print("\n---------------------------------------------------")
+        print(f"                       DAY {player['day']}")
+        print("---------------------------------------------------\n")
+        draw_view(current_map, current_fog, player["x"], player["y"], torch=player["torch"])
+        load_amt = player["copper"] + player["silver"] + player["gold"]
+        print(
+            f"Turns left: {player['turns']}    Load: {load_amt} / {player['capacity']}    Steps: {player['steps']}"
+        )
+        print("\n(WASD) to move\n")
+        print("(M)ap, (I)nformation, (P)ortal, (Q)uit to main menu")
+        act = input("\nAction? ").strip().lower()
+        if act in ("w", "a", "s", "d"):
+            player["turns"] -= 1
+            dx, dy = (0, -1) if act == "w" else (0, 1) if act == "s" else (-1, 0) if act == "a" else (1, 0)
+            nx, ny = player["x"] + dx, player["y"] + dy
+            if not in_bounds(nx, ny, current_map):
+                print("You cannot move past the edge of the map.")
+            else:
+                tile = current_map[ny][nx]
+                # If stepping on portal town tile 'T' -> place portal, sell, return to town
+                if tile == "T":
+                    player["x"], player["y"] = nx, ny
+                    place_portal(player)
+                    # replenish all maps
+                    replenish_day(map_maps)
+                    return
+                # If door 'D' leads to Level 2 (only if there is a level2 map file loaded)
+                if tile == "D":
+                    # move the player into that tile and switch to level 2 (or back to 1)
+                    player["x"], player["y"] = nx, ny
+                    # store portal for current level before switching
+                    player["portal_positions"][lvl] = (player["x"], player["y"])
+                    # toggle level: if at 1 go to 2; if at 2 and D leads back to 1, go to 1
+                    new_level = 2 if lvl == 1 else 1
+                    if new_level not in map_maps:
+                        print("That door is locked.")
+                    else:
+                        player["level"] = new_level
+                        # place player at corresponding entrance in the new map:
+                        # we'll put them at (0,0) or stored portal for that level
+                        px, py = player["portal_positions"].get(new_level, (0, 0))
+                        player["x"], player["y"] = px, py
+                        print(f"You pass through a door and enter mine level {new_level}.")
+                        # refresh references
+                        lvl = player["level"]
+                        current_map = map_maps[lvl]
+                        current_fog = fogs[lvl]
+                        clear_fog_around(current_fog, current_map, player["x"], player["y"], radius=2 if player["torch"] else 1)
+                elif tile in mineral_names:
+                    if not can_mine(tile, player["pickaxe"]):
+                        print("You can't go there — you can't mine that mineral yet.")
+                    else:
+                        player["x"], player["y"] = nx, ny
+                        if mine_tile(current_map, current_fog, player):
+                            player["steps"] += 1
+                            clear_fog_around(current_fog, current_map, player["x"], player["y"], radius=2 if player["torch"] else 1)
+                else:
+                    # empty or other tile: move normally
+                    player["x"], player["y"] = nx, ny
+                    player["steps"] += 1
+                    clear_fog_around(current_fog, current_map, player["x"], player["y"], radius=2 if player["torch"] else 1)
+            if player["turns"] <= 0:
+                print("\nYou are exhausted.")
+                place_portal(player)
+                replenish_day(map_maps)
+                return
+        elif act == "m":
+            draw_map(current_map, current_fog, show_portal=player["portal_positions"].get(lvl), show_miner=(player["x"], player["y"]))
+        elif act == "i":
+            player_info(player)
+        elif act == "p":
+            player["turns"] -= 1
+            # store current pos as portal for this level
+            player["portal_positions"][lvl] = (player["x"], player["y"])
+            place_portal(player)
+            replenish_day(map_maps)
+            return
+        elif act == "q":
+            if input("Quit to main menu? (Y/N) ").strip().lower() == "y":
+                # do not sell; simply go back to town (position 0,0)
+                # store portal
+                player["portal_positions"][lvl] = (player["x"], player["y"])
+                player["x"], player["y"] = 0, 0
+                player["level"] = 1
+                return
+        else:
+            print("Invalid action.")
