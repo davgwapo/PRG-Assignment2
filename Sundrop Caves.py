@@ -212,3 +212,42 @@ def place_portal(player):
     player["x"], player["y"] = 0, 0
     player["level"] = 1  # when in town, level resets to 1 for next enter
 
+
+def can_mine(symbol, pickaxe):
+    return (
+        symbol == "C"
+        or (symbol == "S" and pickaxe >= 2)
+        or (symbol == "G" and pickaxe >= 3)
+    )
+
+
+def mine_tile(map_grid, fog, player):
+    sym = map_grid[player["y"]][player["x"]]
+    if sym not in mineral_names:
+        return False
+    m = mineral_names[sym]
+    pieces = randint(*mineral_piece_ranges[m])
+    load = player["copper"] + player["silver"] + player["gold"]
+    space = player["capacity"] - load
+    if space <= 0:
+        print("You can't carry any more, so you can't go that way.")
+        return False
+    take = min(pieces, space)
+    print(f"\nYou mined {take} piece(s) of {m}.")
+    if take < pieces:
+        print(f"...but you can only carry {take} more piece(s)!")
+    player[m] += take
+    map_grid[player["y"]][player["x"]] = " "
+    fog[player["y"]][player["x"]] = " "
+    return True
+
+
+def replenish_day(map_maps):
+    # map_maps: dict level->map_grid
+    for lvl in map_maps:
+        grid = map_maps[lvl]
+        for y in range(len(grid)):
+            for x in range(len(grid[0])):
+                if grid[y][x] == " " and random.random() < 0.2:
+                    r = random.random()
+                    grid[y][x] = "C" if r < 0.7 else ("S" if r < 0.95 else "G")
