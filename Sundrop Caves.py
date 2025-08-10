@@ -135,3 +135,30 @@ def load_game():
     player = data["player"]
     return maps, fogs, player
 
+
+# ---------- Scores ----------
+def load_scores():
+    if not os.path.exists(SCORES_FILE):
+        return []
+    with open(SCORES_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_scores(scores):
+    with open(SCORES_FILE, "w", encoding="utf-8") as f:
+        json.dump(scores, f)
+
+
+def update_top_scores(player):
+    scores = load_scores()
+    scores.append(
+        {
+            "name": player["name"],
+            "days": player["day"] - 1,
+            "steps": player["steps"],
+            "GP": player["GP"],
+        }
+    )
+    scores.sort(key=lambda e: (e["days"], e["steps"], -e["GP"]))
+    save_scores(scores[:5])
+
