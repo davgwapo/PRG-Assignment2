@@ -162,3 +162,53 @@ def update_top_scores(player):
     scores.sort(key=lambda e: (e["days"], e["steps"], -e["GP"]))
     save_scores(scores[:5])
 
+
+# ---------- Game mechanics ----------
+def sell_ore(player, source, amounts=None):
+    # source: "backpack" or "warehouse"
+    # amounts: dict specifying amounts to sell per mineral (optional). If None sell all from source.
+    if source == "backpack":
+        totals = {"copper": player["copper"], "silver": player["silver"], "gold": player["gold"]}
+    else:
+        totals = player["warehouse"].copy()
+
+    if amounts:
+        # validate amounts
+        for k, v in amounts.items():
+            if v < 0 or v > totals.get(k, 0):
+                print(f"Invalid amount for {k}.")
+                return
+        sell_map = amounts
+    else:
+        sell_map = {k: totals.get(k, 0) for k in totals}
+
+    gained = 0
+    for m, qty in sell_map.items():
+        if qty <= 0:
+            continue
+        price = randint(*mineral_price_ranges[m])
+        value = price * qty
+        print(f"You sell {qty} {m} ore for {value} GP.")
+        gained += value
+        if source == "backpack":
+            player[m] -= qty
+        else:
+            player["warehouse"][m] -= qty
+    player["GP"] += gained
+    if gained == 0:
+        print("Nothing sold.")
+
+
+def place_portal(player):
+    lvl = player["level"]
+    player["portal_positions"][lvl] = (player["x"], player["y"])
+    print("\nYou place your portal stone here and zap back to town.\n")
+    # Selling automatic when you zap back from the mine: sell all backpack items
+    sell_ore(player, "backpack")
+    print(f"You now have {player['GP']} GP!\n")
+    player["day"] += 1
+    player["turns"] = TURNS_PER_DAY
+    # return to town coordinates
+    player["x"], player["y"] = 0, 0
+    player["level"] = 1  # when in town, level resets to 1 for next enter
+
