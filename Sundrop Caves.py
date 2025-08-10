@@ -46,3 +46,44 @@ def clear_fog_around(fog, map_grid, px, py, radius=1):
             nx, ny = px + dx, py + dy
             if in_bounds(nx, ny, map_grid):
                 fog[ny][nx] = map_grid[ny][nx]
+
+# ---------- Drawing ----------
+def draw_map(map_grid, fog, show_portal=None, show_miner=None):
+    width = len(map_grid[0])
+    print("+" + "-" * width + "+")
+    for y in range(len(map_grid)):
+        row = "|"
+        for x in range(width):
+            if show_miner and (x, y) == show_miner:
+                row += "M"
+            elif show_portal and (x, y) == show_portal:
+                row += "P"
+            else:
+                row += fog[y][x]
+        row += "|"
+        print(row)
+    print("+" + "-" * width + "+")
+
+
+def draw_view(map_grid, fog, px, py, torch=False):
+    # torch True -> 5x5 (radius 2), else 3x3 (radius 1)
+    radius = 2 if torch else 1
+    size = radius * 2 + 1
+    border = "+" + "-" * size + "+"
+    print(border)
+    for dy in range(-radius, radius + 1):
+        row = "|"
+        for dx in range(-radius, radius + 1):
+            nx, ny = px + dx, py + dy
+            if not in_bounds(nx, ny, map_grid):
+                row += "#"
+            elif dx == 0 and dy == 0:
+                row += "M"
+            else:
+                ch = fog[ny][nx]
+                # When revealed show the underlying map character (minerals as letters),
+                # when not revealed show space in small view (matching PDF style)
+                row += " " if ch == "?" else ch
+        row += "|"
+        print(row)
+    print(border)
