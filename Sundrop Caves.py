@@ -519,3 +519,109 @@ def enter_mine(map_maps, fogs, player):
                 return
         else:
             print("Invalid action.")
+
+
+# ---------- Main Flow ----------
+def main():
+    # load maps for levels available
+    maps = {}
+    fogs = {}
+    # always try to load level1; level2 optional
+    try:
+        maps[1] = load_map_file(MAP_FILES[1])
+        fogs[1] = create_fog(maps[1])
+    except FileNotFoundError as e:
+        print(str(e))
+        return
+    if os.path.exists(MAP_FILES.get(2, "")):
+        maps[2] = load_map_file(MAP_FILES[2])
+        fogs[2] = create_fog(maps[2])
+
+    player = initialize_player()
+
+    intro()
+    state = "main"
+
+    while True:
+        if state == "main":
+            main_menu()
+            c = input("Your choice? ").strip().lower()
+            if c == "n":
+                name = input("\nGreetings, miner! What is your name? ").strip()
+                if not name:
+                    name = "Anonymous"
+                player = initialize_player()
+                player["name"] = name
+                # reset maps & fogs
+                maps[1] = load_map_file(MAP_FILES[1])
+                fogs[1] = create_fog(maps[1])
+                if 2 in MAP_FILES and os.path.exists(MAP_FILES[2]):
+                    maps[2] = load_map_file(MAP_FILES[2])
+                    fogs[2] = create_fog(maps[2])
+                # clear fog at town start pos for level 1 only
+                clear_fog_around(fogs[1], maps[1], 0, 0)
+                print(f"\nPleased to meet you, {player['name']}. Welcome to Sundrop Town!\n")
+                state = "town"
+            elif c == "l":
+                loaded = load_game()
+                if loaded:
+                    maps, fogs, player = loaded
+                    # ensure keys are ints
+                    maps = {int(k): maps[k] for k in maps}
+                    fogs = {int(k): fogs[k] for k in fogs}
+                    print("\nGame loaded. Returning to town.")
+                    state = "town"
+                else:
+                    # load failed message printed inside load_game
+                    pass
+            elif c == "h":
+                scores = load_scores()
+                if scores:
+                    print("\n--- Top Scores ---")
+                    for i, s in enumerate(scores, 1):
+                        print(f"{i}. {s['name']} - Days: {s['days']}, Steps: {s['steps']}, GP: {s['GP']}")
+                    print("------------------")
+                else:
+                    print("\nNo high scores yet.")
+            elif c == "q":
+                print("Goodbye!")
+                break
+            else:
+                print("Invalid choice.")
+        elif state == "town":
+            town_menu(player)
+            c = input("Your choice? ").strip().lower()
+            if c == "b":
+                shop(player)
+            elif c == "i":
+                player_info(player)
+            elif c == "m":
+                # show level1 map with portal for level1; show miner at town (0,0)
+                draw_map(maps[1], fogs[1], show_portal=player["portal_positions"].get(1, (0, 0)), show_miner=(0, 0))
+            elif c == "e":
+                enter_mine(maps, fogs, player)
+                if player["GP"] >= WIN_GP:
+                    print("\n-------------------------------------------------------------")
+                    print(f"Woo-hoo! Well done, {player['name']}, you have {player['GP']} GP!")
+                    print("You now have enough to retire and play video games every day.")
+                    print(f"And it only took you {player['day']} days and {player['steps']} steps! You win!")
+                    print("-------------------------------------------------------------\n")
+                    update_top_scores(player)
+                    state = "main"
+                else:
+                    state = "town"
+            elif c == "s":
+                sell_menu(player)
+            elif c == "w":
+                warehouse_menu(player)
+            elif c == "v":
+                save_game(maps, fogs, player)
+            elif c == "q":
+                if input("Quit to main menu? (Y/N) ").strip().lower() == "y":
+                    state = "main"
+            else:
+                print("Invalid choice.")
+
+
+if __name__ == "__main__":
+    main()
