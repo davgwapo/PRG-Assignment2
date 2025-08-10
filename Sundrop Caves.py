@@ -87,3 +87,51 @@ def draw_view(map_grid, fog, px, py, torch=False):
         row += "|"
         print(row)
     print(border)
+
+# ---------- Player / State ----------
+def initialize_player():
+    return {
+        "name": "",
+        "level": 1,  # current mine level (1 or 2)
+        "x": 0,
+        "y": 0,
+        # portal positions per level stored as dict {level: (x,y)}
+        "portal_positions": {1: (0, 0), 2: (0, 0)},
+        "capacity": INITIAL_CAPACITY,
+        "copper": 0,
+        "silver": 0,
+        "gold": 0,
+        "warehouse": {"copper": 0, "silver": 0, "gold": 0},
+        "GP": 0,
+        "day": 1,
+        "steps": 0,
+        "turns": TURNS_PER_DAY,
+        "pickaxe": 1,
+        "torch": False,
+    }
+
+
+# ---------- Save / Load ----------
+def save_game(map_grids, fogs, player):
+    # map_grids: dict level->map_grid ; fogs: dict level->fog
+    data = {
+        "maps": {lvl: ["".join(row) for row in map_grids[lvl]] for lvl in map_grids},
+        "fogs": {lvl: ["".join(row) for row in fogs[lvl]] for lvl in fogs},
+        "player": player,
+    }
+    with open(SAVE_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+    print("\nGame saved.")
+
+
+def load_game():
+    if not os.path.exists(SAVE_FILE):
+        print("No saved game found.")
+        return None
+    with open(SAVE_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    maps = {int(k): [list(row) for row in data["maps"][k]] for k in data["maps"]}
+    fogs = {int(k): [list(row) for row in data["fogs"][k]] for k in data["fogs"]}
+    player = data["player"]
+    return maps, fogs, player
+
