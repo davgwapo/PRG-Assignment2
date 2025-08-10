@@ -251,3 +251,85 @@ def replenish_day(map_maps):
                 if grid[y][x] == " " and random.random() < 0.2:
                     r = random.random()
                     grid[y][x] = "C" if r < 0.7 else ("S" if r < 0.95 else "G")
+
+# ---------- Menus & UI ----------
+def intro():
+    print("---------------- Welcome to Sundrop Caves! ----------------")
+    print("You spent all your money to get the deed to a mine, a small")
+    print("  backpack, a simple pickaxe and a magical portal stone.\n")
+    print(f"How quickly can you get the {WIN_GP} GP you need to retire")
+    print("  and live happily ever after?")
+    print("-----------------------------------------------------------")
+
+
+def main_menu():
+    print("\n--- Main Menu ----")
+    print("(N)ew game")
+    print("(L)oad saved game")
+    print("(H)igh scores")
+    print("(Q)uit")
+    print("------------------")
+
+
+def town_menu(player):
+    print(f"\nDAY {player['day']}")
+    print("----- Sundrop Town -----")
+    print("(B)uy stuff")
+    print("See Player (I)nformation")
+    print("See Mine (M)ap")
+    print("(E)nter mine")
+    print("(S)ell ore")
+    print("(W)arehouse")
+    print("Sa(V)e game")
+    print("(Q)uit to main menu")
+    print("------------------------")
+
+
+def shop(player):
+    while True:
+        print("\n----------------------- Shop Menu -------------------------")
+        if player["pickaxe"] < 3:
+            lvl = player["pickaxe"] + 1
+            metal = "silver" if lvl == 2 else "gold"
+            print(
+                f"(P)ickaxe upgrade to Level {lvl} to mine {metal} ore for {PICKAXE_UPGRADE_PRICES[lvl]} GP"
+            )
+        bp_cost = player["capacity"] * 2
+        print(
+            f"(B)ackpack upgrade to carry {player['capacity']+2} items for {bp_cost} GP"
+        )
+        if not player["torch"]:
+            print(f"(T)orch (magic) purchase for {TORCH_PRICE} GP (increases viewport to 5x5)")
+        print("(L)eave shop")
+        print("-----------------------------------------------------------")
+        print(f"GP: {player['GP']}")
+        print("-----------------------------------------------------------")
+        c = input("Your choice? ").strip().lower()
+        if c == "p" and player["pickaxe"] < 3:
+            lvl = player["pickaxe"] + 1
+            cost = PICKAXE_UPGRADE_PRICES[lvl]
+            if player["GP"] >= cost:
+                player["GP"] -= cost
+                player["pickaxe"] = lvl
+                print("Congratulations!")
+            else:
+                print("You do not have enough GP for that upgrade.")
+        elif c == "b":
+            if player["GP"] >= bp_cost:
+                player["GP"] -= bp_cost
+                player["capacity"] += 2
+                print("Congratulations!")
+            else:
+                print("You do not have enough GP for that upgrade.")
+        elif c == "t" and not player["torch"]:
+            if player["GP"] >= TORCH_PRICE:
+                player["GP"] -= TORCH_PRICE
+                player["torch"] = True
+                print("You purchased the Magic Torch! Your viewport is now 5x5.")
+            else:
+                print("You do not have enough GP for that upgrade.")
+        elif c == "l":
+            break
+        else:
+            print("Invalid choice.")
+
