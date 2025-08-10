@@ -333,3 +333,87 @@ def shop(player):
         else:
             print("Invalid choice.")
 
+
+# ---------- Town actions ----------
+def player_info(player):
+    print("\n----- Player Information -----")
+    print(f"Name: {player['name']}")
+    ppos = player["portal_positions"].get(player["level"], (0, 0))
+    print(f"Portal position (current level {player['level']}): ({ppos[0]}, {ppos[1]})")
+    print(f"Pickaxe level: {player['pickaxe']}")
+    print(f"Gold: {player['gold']}")
+    print(f"Silver: {player['silver']}")
+    print(f"Copper: {player['copper']}")
+    load = player["copper"] + player["silver"] + player["gold"]
+    print("------------------------------")
+    print(f"Load: {load} / {player['capacity']}")
+    print("------------------------------")
+    print(f"GP: {player['GP']}")
+    print("------------------------------")
+    print(f"Warehouse - Gold: {player['warehouse']['gold']}, Silver: {player['warehouse']['silver']}, Copper: {player['warehouse']['copper']}")
+    print("------------------------------")
+    print(f"Steps taken: {player['steps']}")
+    print("------------------------------")
+    print(f"Torch owned: {'Yes' if player['torch'] else 'No'}")
+    print("------------------------------")
+
+
+def warehouse_menu(player):
+    while True:
+        print("\n----- Warehouse Menu -----")
+        print("(S)tore all backpack ore in warehouse")
+        print("(R)etrieve ore from warehouse to backpack")
+        print("(V)iew warehouse contents")
+        print("(L)eave warehouse")
+        print("--------------------------")
+        c = input("Your choice? ").strip().lower()
+        if c == "s":
+            # move as much as capacity allows from backpack to warehouse
+            carried = player["copper"] + player["silver"] + player["gold"]
+            to_store = {"copper": player["copper"], "silver": player["silver"], "gold": player["gold"]}
+            if carried == 0:
+                print("You have nothing to store.")
+                continue
+            for k, v in to_store.items():
+                player["warehouse"][k] += v
+                player[k] -= v
+            print("All carried ore moved to warehouse.")
+        elif c == "r":
+            # retrieve as much as backpack capacity allows (LIFO: gold, silver, copper)
+            space = player["capacity"] - (player["copper"] + player["silver"] + player["gold"])
+            if space <= 0:
+                print("You have no space in your backpack.")
+                continue
+            for k in ("gold", "silver", "copper"):
+                take = min(player["warehouse"][k], space)
+                if take > 0:
+                    player["warehouse"][k] -= take
+                    player[k] += take
+                    space -= take
+            print("Retrieved ore from warehouse into backpack where possible.")
+        elif c == "v":
+            w = player["warehouse"]
+            print(f"Warehouse contents - Gold: {w['gold']}, Silver: {w['silver']}, Copper: {w['copper']}")
+        elif c == "l":
+            return
+        else:
+            print("Invalid choice.")
+
+
+def sell_menu(player):
+    while True:
+        print("\n----- Sell Menu -----")
+        print("(B)ackpack - sell all ore in backpack")
+        print("(W)arehouse - sell from warehouse")
+        print("(L)eave sell menu")
+        print("---------------------")
+        c = input("Your choice? ").strip().lower()
+        if c == "b":
+            sell_ore(player, "backpack")
+        elif c == "w":
+            sell_ore(player, "warehouse")
+        elif c == "l":
+            return
+        else:
+            print("Invalid choice.")
+
