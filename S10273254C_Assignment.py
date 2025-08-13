@@ -38,6 +38,7 @@ def load_map_file(filename):
 
 def create_fog(map_grid):
     return [["?" for _ in row] for row in map_grid]
+# Creates a “fog-of-war” layer with ? covering all squares.
 
 
 def clear_fog_around(fog, map_grid, px, py, radius=1):
@@ -46,6 +47,8 @@ def clear_fog_around(fog, map_grid, px, py, radius=1):
             nx, ny = px + dx, py + dy
             if in_bounds(nx, ny, map_grid):
                 fog[ny][nx] = map_grid[ny][nx]
+# Reveals tiles around the player’s position within radius.
+
 
 # ---------- Drawing ----------
 def draw_map(map_grid, fog, show_portal=None, show_miner=None):
@@ -63,7 +66,9 @@ def draw_map(map_grid, fog, show_portal=None, show_miner=None):
         row += "|"
         print(row)
     print("+" + "-" * width + "+")
-
+# Draws the full map with borders.
+# Uses fog layer so unrevealed tiles show ?.
+# Can highlight the portal (P) and player (M).
 
 def draw_view(map_grid, fog, px, py, torch=False):
     # torch True -> 5x5 (radius 2), else 3x3 (radius 1)
@@ -87,6 +92,8 @@ def draw_view(map_grid, fog, px, py, torch=False):
         row += "|"
         print(row)
     print(border)
+# Draws small viewport (3×3 or 5×5 if torch owned).
+# Shows M in the middle, unrevealed tiles as blank spaces, out-of-bounds as #.
 
 # ---------- Player / State ----------
 def initialize_player():
@@ -109,6 +116,7 @@ def initialize_player():
         "pickaxe": 1,
         "torch": False,
     }
+# Creates a dictionary with all player stats.
 
 
 # ---------- Save / Load ----------
@@ -122,6 +130,7 @@ def save_game(map_grids, fogs, player):
     with open(SAVE_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f)
     print("\nGame saved.")
+# Saves maps, fog states, and player dictionary to JSON.
 
 
 def load_game():
@@ -134,6 +143,7 @@ def load_game():
     fogs = {int(k): [list(row) for row in data["fogs"][k]] for k in data["fogs"]}
     player = data["player"]
     return maps, fogs, player
+# Loads saved data back into game variables.
 
 
 # ---------- Scores ----------
@@ -161,6 +171,8 @@ def update_top_scores(player):
     )
     scores.sort(key=lambda e: (e["days"], e["steps"], -e["GP"]))
     save_scores(scores[:5])
+
+# 3 of these Reads/writes from scores.json, Stores top 5 scores, sorted by days → steps → GP.
 
 
 # ---------- Game mechanics ----------
@@ -197,6 +209,9 @@ def sell_ore(player, source, amounts=None):
     player["GP"] += gained
     if gained == 0:
         print("Nothing sold.")
+# Sells ore from backpack or warehouse.
+# Random price within range per mineral type.
+# Adds GP to player’s total.c
 
 
 def place_portal(player):
@@ -211,7 +226,9 @@ def place_portal(player):
     # return to town coordinates
     player["x"], player["y"] = 0, 0
     player["level"] = 1  # when in town, level resets to 1 for next enter
-
+# Sets portal position for current level.
+# Sells all backpack ore automatically.
+# Returns player to town, resets turns, moves to day+1.
 
 def can_mine(symbol, pickaxe):
     return (
@@ -219,6 +236,7 @@ def can_mine(symbol, pickaxe):
         or (symbol == "S" and pickaxe >= 2)
         or (symbol == "G" and pickaxe >= 3)
     )
+# Checks if player’s pickaxe can mine a mineral type.
 
 
 def mine_tile(map_grid, fog, player):
@@ -240,6 +258,9 @@ def mine_tile(map_grid, fog, player):
     map_grid[player["y"]][player["x"]] = " "
     fog[player["y"]][player["x"]] = " "
     return True
+# Mines ore at player’s position.
+# Random pieces taken (limited by backpack space).
+# Removes mineral from map and fog.
 
 
 def replenish_day(map_maps):
@@ -251,6 +272,7 @@ def replenish_day(map_maps):
                 if grid[y][x] == " " and random.random() < 0.2:
                     r = random.random()
                     grid[y][x] = "C" if r < 0.7 else ("S" if r < 0.95 else "G")
+# Bonus feature: 20% chance that empty tiles regenerate minerals.
 
 # ---------- Menus & UI ----------
 def intro():
@@ -519,6 +541,7 @@ def enter_mine(map_maps, fogs, player):
                 return
         else:
             print("Invalid action.")
+# Handles all gameplay in the mine
 
 
 # ---------- Main Flow ----------
